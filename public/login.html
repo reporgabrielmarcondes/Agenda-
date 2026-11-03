@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fafafa">
+<meta name="color-scheme" content="light dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Entrar · Agenda</title>
+<script>
+/* mesmo tema do app, aplicado antes da pintura */
+(function(){var p='auto';try{p=(JSON.parse(localStorage.getItem('agenda-profile-v1'))||{}).theme||'auto'}catch(e){}
+ var d=p==='dark'||(p!=='light'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);
+ document.documentElement.dataset.theme=d?'dark':'light';
+ var m=document.querySelector('meta[name=theme-color]');if(m)m.content=d?'#17181c':'#fafafa';})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" crossorigin>
+<style>
+:root{color-scheme:light;--ink:#1f2024;--onink:#fff;--mut:#b9bbc0;--mut2:#8a8d94;--bg:#e8e9ec;--paper:#fafafa;--card:#f1f1f3;--field:#fff;--bd:#e2e2e5;--err:#c0392b;--ok:#1e8e5a;
+--p:'Poppins',Arial,sans-serif;--a:Arial,Helvetica,sans-serif}
+[data-theme=dark]{color-scheme:dark;--ink:#f2f2f4;--onink:#17181c;--mut:#5d6068;--mut2:#9b9ea6;--bg:#0e0f12;--paper:#17181c;--card:#272930;--field:#1b1c21;--bd:#363842;--err:#ff7b6b;--ok:#4fd18b}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--a);background:var(--bg);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:32px 16px}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.box{width:360px;max-width:100%;background:var(--paper);border-radius:28px;box-shadow:0 24px 50px -18px rgba(30,32,40,.28);padding:36px 28px 28px}
+[data-theme=dark] .box{box-shadow:0 24px 50px -18px rgba(0,0,0,.6)}
+.logo{width:56px;height:56px;border-radius:16px;display:block;margin-bottom:22px}
+h1{font-family:var(--p);font-weight:400;font-size:20px}
+h1 b{font-weight:600}
+.sub{font-size:11px;color:var(--mut2);margin:6px 0 22px;line-height:1.5}
+.tabs{display:flex;background:var(--card);border-radius:12px;padding:3px;margin-bottom:18px}
+.tabs button{flex:1;font-family:var(--p);font-weight:500;font-size:11px;padding:8px 0;border-radius:10px;color:var(--mut2)}
+.tabs button.on{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+label{display:block;font-family:var(--p);font-weight:500;font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut2);margin:14px 0 6px}
+.f{position:relative}
+input{width:100%;background:var(--field);border:1.5px solid var(--bd);border-radius:12px;padding:12px 14px;font-size:13px}
+input:focus{outline:none;border-color:var(--ink)}
+.f input{padding-right:70px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--mut2);padding:8px}
+.go{width:100%;margin-top:22px;background:var(--ink);color:var(--onink);border-radius:14px;padding:13px;font-family:var(--p);font-weight:500;font-size:13px;transition:transform .15s,opacity .15s}
+.go:active{transform:scale(.98)}
+.go:disabled{opacity:.55;cursor:default}
+.link{display:block;margin:16px auto 0;font-size:11px;color:var(--mut2);text-decoration:underline;text-underline-offset:3px}
+.msg{font-size:11px;line-height:1.5;margin-top:14px;padding:10px 12px;border-radius:12px;background:var(--card);display:none}
+.msg.show{display:block}
+.msg.err{color:var(--err)}
+.msg.ok{color:var(--ok)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="box">
+ <img class="logo" src="icon-192.png" alt="Agenda">
+ <h1 id="ttl">Bem-vindo à <b>Agenda</b></h1>
+ <p class="sub" id="sub">Entre para acessar seus compromissos, notas e lembretes.</p>
+
+ <div class="tabs" id="tabs" role="tablist">
+  <button type="button" class="on" data-m="in" role="tab">Entrar</button>
+  <button type="button" data-m="up" role="tab">Criar conta</button>
+ </div>
+
+ <form id="f" novalidate>
+  <div id="rowEmail"><label for="em">E-mail</label>
+   <input id="em" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required></div>
+  <div id="rowPw"><label for="pw">Senha</label>
+   <div class="f"><input id="pw" type="password" autocomplete="current-password" placeholder="Mínimo 6 caracteres" required minlength="6">
+    <button type="button" class="eye" id="eye" aria-label="Mostrar senha">Mostrar</button></div></div>
+  <button class="go" id="go" type="submit">Entrar</button>
+ </form>
+ <div class="msg" id="msg" role="status" aria-live="polite"></div>
+ <button type="button" class="link" id="forgot">Esqueci minha senha</button>
+</main>
+
+<script src="config.js"></script>
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+(function(){
+ var A=window.agendaAuth,sb=A.client;
+ var $=function(s){return document.querySelector(s)};
+ var mode='in'; /* in | up | forgot | reset */
+ var em=$('#em'),pw=$('#pw'),go=$('#go'),msg=$('#msg');
+
+ function say(t,k){msg.textContent=t||'';msg.className='msg'+(t?' show '+(k||'err'):'')}
+ function busy(b){go.disabled=b}
+ var ERR={
+  'Invalid login credentials':'E-mail ou senha incorretos.',
+  'Email not confirmed':'Confirme seu e-mail antes de entrar (veja a caixa de entrada e o spam).',
+  'User already registered':'Este e-mail já tem conta. Use “Entrar”.',
+  'Signup requires a valid password':'Informe uma senha válida.',
+  'Unable to validate email address: invalid format':'E-mail inválido.',
+  'New password should be different from the old password.':'A nova senha precisa ser diferente da atual.',
+  'Failed to fetch':'Sem conexão. Verifique sua internet e tente de novo.'
+ };
+ function tr(e){
+  var m=(e&&e.message)||'';
+  if(ERR[m])return ERR[m];
+  if(/at least \d+ characters/i.test(m))return 'A senha precisa ter pelo menos 6 caracteres.';
+  if(/rate limit|too many/i.test(m))return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+  if(/network|fetch/i.test(m))return ERR['Failed to fetch'];
+  return 'Algo deu errado: '+m;
+ }
+
+ function setMode(m){
+  mode=m;say('');
+  var tabs=$('#tabs');
+  tabs.hidden=(m==='forgot'||m==='reset');
+  tabs.querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.m===m)});
+  $('#rowEmail').hidden=(m==='reset');
+  $('#rowPw').hidden=(m==='forgot');
+  $('#forgot').hidden=(m!=='in');
+  pw.autocomplete=(m==='in')?'current-password':'new-password';
+  var T={
+   in:['Bem-vindo à <b>Agenda</b>','Entre para acessar seus compromissos, notas e lembretes.','Entrar'],
+   up:['Criar <b>conta</b>','Use seu e-mail e uma senha para começar.','Criar conta'],
+   forgot:['Recuperar <b>senha</b>','Enviaremos um link para você criar uma nova senha.','Enviar link'],
+   reset:['Nova <b>senha</b>','Escolha a nova senha da sua conta.','Salvar senha']
+  }[m];
+  $('#ttl').innerHTML=T[0];$('#sub').textContent=T[1];go.textContent=T[2];
+  document.title=(m==='in'?'Entrar':m==='up'?'Criar conta':'Senha')+' · Agenda';
+ }
+
+ function enter(session){
+  A.adoptUser(session.user.id);
+  location.replace('agenda.html');
+ }
+
+ $('#tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b)setMode(b.dataset.m)});
+ $('#forgot').onclick=function(){setMode('forgot')};
+ $('#eye').onclick=function(){
+  var show=pw.type==='password';pw.type=show?'text':'password';
+  this.textContent=show?'Ocultar':'Mostrar';this.setAttribute('aria-label',show?'Ocultar senha':'Mostrar senha');
+ };
+
+ if(!sb){
+  say('O app ainda não está configurado: faltam SUPABASE_URL e SUPABASE_ANON_KEY (veja o README).','err');
+  go.disabled=true;return;
+ }
+
+ /* link de recuperação de senha */
+ sb.auth.onAuthStateChange(function(ev){if(ev==='PASSWORD_RECOVERY')setMode('reset')});
+ if(/type=recovery/.test(location.hash))setMode('reset');
+
+ /* já logado? segue para o app (não vale no modo de recuperação) */
+ sb.auth.getSession().then(function(r){
+  var s=r.data&&r.data.session;
+  if(s&&mode!=='reset'&&!/type=recovery/.test(location.hash))enter(s);
+ }).catch(function(){});
+
+ $('#f').addEventListener('submit',async function(e){
+  e.preventDefault();say('');
+  var email=em.value.trim(),pass=pw.value;
+  if(mode!=='reset'&&!/^\S+@\S+\.\S+$/.test(email))return say('Digite um e-mail válido.');
+  if((mode==='in'||mode==='up'||mode==='reset')&&pass.length<6)return say('A senha precisa ter pelo menos 6 caracteres.');
+  busy(true);
+  try{
+   var base=location.origin+location.pathname.replace(/[^/]*$/,'')+'login.html';
+   if(mode==='in'){
+    var r=await sb.auth.signInWithPassword({email:email,password:pass});
+    if(r.error)throw r.error;
+    return enter(r.data.session);
+   }
+   if(mode==='up'){
+    var r2=await sb.auth.signUp({email:email,password:pass,options:{emailRedirectTo:base}});
+    if(r2.error)throw r2.error;
+    if(r2.data.session)return enter(r2.data.session);
+    /* e-mail já cadastrado: o Supabase devolve usuário sem identidades */
+    if(r2.data.user&&r2.data.user.identities&&!r2.data.user.identities.length)throw {message:'User already registered'};
+    setMode('in');say('Conta criada! Enviamos um link de confirmação para '+email+'. Depois de confirmar, volte aqui e entre.','ok');
+    return;
+   }
+   if(mode==='forgot'){
+    var r3=await sb.auth.resetPasswordForEmail(email,{redirectTo:base});
+    if(r3.error)throw r3.error;
+    return say('Se existir uma conta com esse e-mail, o link de recuperação já foi enviado.','ok');
+   }
+   if(mode==='reset'){
+    var r4=await sb.auth.updateUser({password:pass});
+    if(r4.error)throw r4.error;
+    var s=(await sb.auth.getSession()).data.session;
+    if(s)return enter(s);
+    setMode('in');say('Senha alterada! Entre com a nova senha.','ok');
+   }
+  }catch(err){say(tr(err))}
+  finally{busy(false)}
+ });
+
+ setMode(mode);
+ if(/type=recovery/.test(location.hash))setMode('reset');
+ if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(function(){});
+})();
+</script>
+</body>
+</html>
