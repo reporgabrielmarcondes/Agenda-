@@ -287,7 +287,9 @@ body.kbopen .toast{bottom:calc(var(--kbh,0px) + 16px)}
 .dy-q:focus{outline:2px solid var(--ink);outline-offset:1px}
 .dy-d{display:block;font-size:10px;color:var(--mut2);margin-bottom:6px;letter-spacing:.02em}
 .dy-foot{display:flex;justify-content:center;flex:none;padding-bottom:6px}
-.dy-mood button{font-size:18px;padding:6px 12px}
+.dy-mood button{padding:9px 14px}
+.dy-mood button i{width:auto;height:auto;border-radius:0;background:none;font-size:17px}
+.dy-d i{margin-right:6px;font-size:12px;color:var(--ink)}
 @media(prefers-reduced-motion:reduce){.dy-dots.err{animation:none}}
 @media(max-width:800px){
  #vChat{transition:bottom .35s cubic-bezier(.22,1,.36,1)}
@@ -2223,7 +2225,9 @@ renderAll();
 <script>
 /* ===== Diário com PIN: texto criptografado (AES-GCM, chave derivada do PIN com PBKDF2) ===== */
 (function(){
- const KEY='agenda-diary-v1',LK='agenda-diary-lock',LEN=6,MOODS=['😄','🙂','😐','😔','😢'];
+ const KEY='agenda-diary-v1',LK='agenda-diary-lock',LEN=6,MOODS=[['m1','fa-face-laugh-beam','Ótimo'],['m2','fa-face-smile','Bem'],['m3','fa-face-meh','Neutro'],['m4','fa-face-frown','Mal'],['m5','fa-face-sad-tear','Péssimo']],
+ LEG={'\u{1F604}':'m1','\u{1F642}':'m2','\u{1F610}':'m3','\u{1F614}':'m4','\u{1F622}':'m5'},
+ moodOf=k=>MOODS.find(m=>m[0]===(LEG[k]||k));
  const enc=new TextEncoder(),dec=new TextDecoder(),CAN=!!(window.crypto&&crypto.subtle);
  const b64=u=>{let t='';u=new Uint8Array(u);for(let i=0;i<u.length;i++)t+=String.fromCharCode(u[i]);return btoa(t)};
  const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
@@ -2373,8 +2377,9 @@ renderAll();
   if(!list.length){el.list.innerHTML='<p class="empty"></p>';el.list.firstChild.innerHTML=q?'Nada encontrado.':'Nenhuma entrada ainda.<br>Toque em + para escrever.';return}
   list.forEach(e=>{
    const c=document.createElement('button');c.type='button';c.className='ncard';c.dataset.id=e.id;
-   c.innerHTML='<small class="dy-d"></small><p></p>';
-   c.querySelector('small').textContent=(e.mood?e.mood+'  ':'')+fmtAt(e.at);
+   const mo=moodOf(e.mood);
+   c.innerHTML='<small class="dy-d">'+(mo?'<i class="fa-regular '+mo[1]+'" title="'+mo[2]+'"></i>':'')+'<span></span></small><p></p>';
+   c.querySelector('small span').textContent=fmtAt(e.at);
    c.querySelector('p').textContent=e.text;
    el.list.append(c);
   });
@@ -2386,11 +2391,11 @@ renderAll();
  el.x.setAttribute('data-kb','');el.x.inputMode='none';el.x.dataset.kbl='Diário';
  function drawMood(){
   el.mood.innerHTML='';
-  MOODS.forEach(m=>{const b=document.createElement('button');b.type='button';b.textContent=m;b.className=m===mood?'on':'';b.setAttribute('aria-label','Humor '+m);b.setAttribute('aria-pressed',m===mood);
-   b.onclick=()=>{mood=(mood===m?'':m);drawMood()};el.mood.append(b)});
+  MOODS.forEach(([k,ic,t])=>{const b=document.createElement('button');b.type='button';b.innerHTML='<i class="fa-regular '+ic+'"></i>';b.className=k===mood?'on':'';b.setAttribute('aria-label','Humor: '+t);b.setAttribute('aria-pressed',k===mood);
+   b.onclick=()=>{mood=(mood===k?'':k);drawMood()};el.mood.append(b)});
  }
  function openEntry(id){
-  const e=id?entries.find(x=>x.id===id):null;editId=e?e.id:null;mood=e?e.mood||'':'';
+  const e=id?entries.find(x=>x.id===id):null;editId=e?e.id:null;mood=e&&moodOf(e.mood)?moodOf(e.mood)[0]:'';
   el.h.textContent=e?'Editar entrada':'Nova entrada';el.x.value=e?e.text:'';el.del.style.display=e?'block':'none';
   drawMood();el.ov.classList.add('open');el.x.focus();
  }
