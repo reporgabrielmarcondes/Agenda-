@@ -1563,6 +1563,13 @@ renderAll();
    all.forEach(i=>sysNotify(i.title,i.text,i.id));
   }
  }
+ /* usado pelo assistente: agenda um lembrete (retorna false se o horário já passou) */
+ window.addReminder=function(title,text,date,time){
+  const due=tsOf(date,time);
+  if(!title||!(due>Date.now()))return false;
+  items.push({id:uid(),kind:'rem',title:String(title).slice(0,80),text:String(text||'').slice(0,200),due,at:Date.now(),fired:false,read:true,hidden:false});
+  sv();tab='all';render();return true;
+ };
  window.syncAlerts=check;
  check();render();
  setInterval(check,15000);
@@ -1819,7 +1826,7 @@ renderAll();
   return 'Agora: '+n.toLocaleString('pt-BR',{dateStyle:'full',timeStyle:'short'})+'\nUsuário: '+PROF.name+'\nTags existentes: '+Object.values(TYPES).map(t=>t.l).join(', ')+'\n\nCOMPROMISSOS ('+a+' a '+b+'):\n'+(ev.join('\n')||'(nenhum)')+'\n\nNOTAS:\n'+(nt.join('\n')||'(nenhuma)')+'\n\nLEMBRETES PENDENTES:\n'+(rm.join('\n')||'(nenhum)');
  }
  const SYS=()=>'Você é o assistente da Agenda de '+PROF.name+', um app de aulas, entregas, notas e lembretes. Responda em português do Brasil, de forma curta e prática. Use apenas os dados abaixo; se faltar informação, pergunte. Ao planejar, respeite horários ocupados, evite conflitos e proponha blocos realistas.\n'+
-  'Para sugerir novos compromissos, explique e termine com UM bloco exatamente neste formato (o app mostra botões para o usuário aprovar; nunca diga que já adicionou):\n```agenda-add\n[{"title":"...","sub":"","date":"AAAA-MM-DD","start":"HH:MM","end":"HH:MM","tag":"nome de uma tag existente"}]\n```\nSe o usuário anexar uma imagem, ela é o quadro de desenho dele.\n\n'+ctx();
+  'Para sugerir novos compromissos, explique e termine com UM bloco exatamente neste formato (o app mostra botões para o usuário aprovar; nunca diga que já adicionou):\n```agenda-add\n[{"title":"...","sub":"","date":"AAAA-MM-DD","start":"HH:MM","end":"HH:MM","tag":"nome de uma tag existente"}]\n```\nPara criar lembretes (aviso com notificação em data e hora futuras), use outro bloco, também aprovado pelo usuário com um botão (nunca diga que já agendou):\n```agenda-reminder\n[{"title":"...","text":"detalhe opcional","date":"AAAA-MM-DD","time":"HH:MM"}]\n```\nUse lembrete quando o usuário pedir para ser avisado ou lembrado de algo; use agenda-add para compromissos com início e fim. A data e a hora precisam ser futuras; se o usuário não disser a hora, pergunte.\nSe o usuário anexar uma imagem, ela é o quadro de desenho dele.\n\n'+ctx();
 
  async function call(){
   const p=AI.p,m=AI.model||PV[p].m,H=CH.slice(-20),sys=SYS(),b64=d=>d.split(',')[1],tx=x=>x.t||'Veja meu quadro.';
@@ -1845,9 +1852,11 @@ renderAll();
  /* propostas: o modelo sugere, o usuário aprova com um toque */
  const tagKey=l=>Object.keys(TYPES).find(k=>TYPES[k].l.toLowerCase()===String(l||'').toLowerCase())||(TYPES.personal?'personal':Object.keys(TYPES)[0]);
  const okP=p=>p&&typeof p.title==='string'&&p.title.trim()&&/^\d{4}-\d{2}-\d{2}$/.test(p.date)&&/^\d{2}:\d{2}$/.test(p.start)&&/^\d{2}:\d{2}$/.test(p.end)&&p.end>p.start;
+ const okR=r=>r&&typeof r.title==='string'&&r.title.trim()&&/^\d{4}-\d{2}-\d{2}$/.test(r.date)&&/^\d{2}:\d{2}$/.test(r.time);
  function split(t){
-  const P=[],clean=t.replace(/```agenda-add\s*([\s\S]*?)```/g,(m,j)=>{try{const a=JSON.parse(j);if(Array.isArray(a))P.push(...a.filter(okP).slice(0,12))}catch(x){}return''}).trim();
-  return{clean,P};
+  const P=[],R=[],clean=t.replace(/```agenda-add\s*([\s\S]*?)```/g,(m,j)=>{try{const a=JSON.parse(j);if(Array.isArray(a))P.push(...a.filter(okP).slice(0,12))}catch(x){}return''})
+   .replace(/```agenda-reminder\s*([\s\S]*?)```/g,(m,j)=>{try{const a=JSON.parse(j);if(Array.isArray(a))R.push(...a.filter(okR).slice(0,12))}catch(x){}return''}).trim();
+  return{clean,P,R};
  }
  function addEv(p){
   const type=tagKey(p.tag);
@@ -1872,7 +1881,7 @@ renderAll();
     if(m.img){const im=new Image();im.alt='Quadro';im.src=m.img;d.append(im)}
     if(m.t){const s=document.createElement('span');s.textContent=m.t;d.append(s)}
    }else{
-    const{clean,P}=split(m.t);d.innerHTML=md(clean);
+    const{clean,P,R}=split(m.t);d.innerHTML=md(clean);
     P.forEach(p=>{
      const k=p.title+p.date+p.start,r=document.createElement('div');r.className='prop';
      r.innerHTML='<div class="tx"><b></b><span></span></div><button type="button"></button>';
@@ -1880,6 +1889,18 @@ renderAll();
      r.querySelector('span').textContent=fmtDate(p.date)+' · '+p.start+'–'+p.end;
      const bt=r.querySelector('button');bt.textContent=done.has(k)?'Adicionado':'Adicionar';bt.disabled=done.has(k);
      bt.onclick=()=>{addEv(p);done.add(k);bt.textContent='Adicionado';bt.disabled=true;toast('Compromisso adicionado')};
+     d.append(r);
+    });
+    R.forEach(q=>{
+     const k='r|'+q.title+q.date+q.time,r=document.createElement('div');r.className='prop';
+     r.innerHTML='<div class="tx"><b></b><span></span></div><button type="button"></button>';
+     r.querySelector('b').textContent=q.title;
+     r.querySelector('span').textContent='Lembrete · '+fmtDate(q.date)+' · '+q.time;
+     const bt=r.querySelector('button');bt.textContent=done.has(k)?'Agendado':'Agendar';bt.disabled=done.has(k);
+     bt.onclick=()=>{
+      if(!window.addReminder||!window.addReminder(q.title,q.text,q.date,q.time))return toast('Esse horário já passou. Peça outro horário ao assistente.');
+      done.add(k);bt.textContent='Agendado';bt.disabled=true;toast('Lembrete agendado');
+     };
      d.append(r);
     });
    }
