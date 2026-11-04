@@ -262,7 +262,12 @@ body.kbopen .toast{bottom:calc(var(--kbh,0px) + 16px)}
  body.kbopen .modal{padding-bottom:20px}
  .modal{width:100%;border-radius:26px 26px 0 0;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 }
-@media(prefers-reduced-motion:reduce){.spin i,.modal{animation:none}.toast{transition:none}}
+@media(max-width:800px){
+ #vChat{transition:bottom .35s cubic-bezier(.22,1,.36,1)}
+ body.kbopen[data-view=chat] #vChat{bottom:var(--kbh,0px)}
+ body.kbopen[data-view=chat] #vChat .nav{display:none}
+}
+@media(prefers-reduced-motion:reduce){#vChat{transition:none}.spin i,.modal{animation:none}.toast{transition:none}}
 /* ===== Banner de saudação ===== */
 .gb{position:relative;height:72px;margin-top:14px;border-radius:20px;overflow:hidden;isolation:isolate;color:var(--gbi,#1f2024)}
 .gb svg{position:absolute;inset:0;width:100%;height:100%}
@@ -1213,11 +1218,12 @@ const VAR={a:['á','à','â','ã'],e:['é','ê','è'],i:['í','î'],o:['ó','ô'
 const esc=t=>t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 let kbEl=null,shiftS='off',layer='abc',cur=null,repT=null,repI=null,switching=false;
 const kkey=(k,lab,cls='',v='')=>`<button type="button" tabindex="-1" class="k ${cls}${v?' v':''}" data-k="${esc(k)}"${v?` data-v="${esc(v)}"`:''}>${lab}</button>`;
+function kbFields(el){const m=el.closest('.modal');return m?[...m.querySelectorAll('[data-kb]')].filter(x=>x.offsetParent):[el]}
 function drawKb(){
  const up=shiftS!=='off',R=ROWS[layer];
  const ch=c=>{const x=layer==='abc'&&up?c.toUpperCase():c;const v=layer==='abc'&&VAR[c]?VAR[c].map(y=>up?y.toUpperCase():y).join(''):'';return kkey(x,esc(x),'',v)};
  const ta=kbEl&&kbEl.tagName==='TEXTAREA';
- const f=kbEl?[...kbEl.closest('.modal').querySelectorAll('[data-kb]')].filter(x=>x.offsetParent):[];
+ const f=kbEl?kbFields(kbEl):[];
  const last=!ta&&kbEl&&f.indexOf(kbEl)===f.length-1;
  const ent=kkey('enter',`<i class="fa-solid ${ta?'fa-turn-down':last?'fa-check':'fa-arrow-right'}"></i>`,'go w15'+(ta?' ta':''));
  const r3=layer==='abc'
@@ -1227,7 +1233,7 @@ function drawKb(){
 }
 function showKb(el){
  kbEl=el;layer='abc';shiftS='off';
- const lb=el.closest('label');$('#kbL').textContent=lb?lb.firstChild.textContent.trim():'';
+ const lb=el.closest('label');$('#kbL').textContent=lb?lb.firstChild.textContent.trim():(el.dataset.kbl||'');
  autoShift();drawKb();
  kb.classList.add('open');document.body.classList.add('kbopen');
  requestAnimationFrame(()=>{document.documentElement.style.setProperty('--kbh',(kb.offsetHeight+(innerWidth>800?12:0))+'px');el.scrollIntoView({block:'nearest',behavior:'smooth'})});
@@ -1265,7 +1271,7 @@ function press(k){
  else if(k==='enter'){
   const el=kbEl;if(!el)return;
   if(el.tagName==='TEXTAREA'){typeChar('\n');return}
-  const f=[...el.closest('.modal').querySelectorAll('[data-kb]')].filter(x=>x.offsetParent),nx=f[f.indexOf(el)+1];
+  const f=kbFields(el),nx=f[f.indexOf(el)+1];
   if(nx)nx.focus();else hideKb();
  }else typeChar(k);
 }
@@ -1816,6 +1822,16 @@ renderAll();
  let AI=Object.assign({p:'',key:'',model:'',base:''},ld(AK,{}));
  let CH=ld(CK,[]),img=null,busy=false,lastErr='';
  const done=new Set(),box=$('#cMsgs'),inp=$('#cIn');
+ /* teclado do app no campo do chat (celular); no computador usa o teclado físico */
+ const mq=matchMedia('(max-width:800px)');
+ const kbMode=()=>{
+  if(mq.matches){inp.setAttribute('data-kb','');inp.dataset.kbl='Assistente';inp.inputMode='none'}
+  else{inp.removeAttribute('data-kb');inp.inputMode='text';if(kbEl===inp)hideKb()}
+ };
+ kbMode();mq.addEventListener('change',kbMode);
+ new MutationObserver(()=>{if(document.body.dataset.view!=='chat'&&kbEl===inp)hideKb()}).observe(document.body,{attributes:true,attributeFilter:['data-view']});
+ if(window.ResizeObserver)new ResizeObserver(()=>{box.scrollTop=box.scrollHeight}).observe(box);
+ $('#cSend').addEventListener('mousedown',e=>e.preventDefault());
 
  /* contexto: agenda, notas e lembretes enviados ao modelo a cada pergunta */
  function ctx(){
@@ -1919,6 +1935,7 @@ renderAll();
   if((!t&&!img)||busy)return;
   if(!AI.p||!AI.key)return openCfg();
   const keep=img;CH.push({r:'user',t,img:keep});inp.value='';img=null;grow();att();lastErr='';busy=true;draw();upd();
+  if(kbEl===inp){autoShift();drawKb()}
   try{CH.push({r:'assistant',t:(await call())||'(sem resposta)'})}
   catch(e){CH.pop();inp.value=t;img=keep;grow();att();lastErr=e instanceof TypeError?'Sem conexão ou o provedor bloqueou o acesso direto do navegador (CORS).':String(e.message||e).slice(0,300)}
   busy=false;persist();draw();upd();
