@@ -263,6 +263,32 @@ body.kbopen .toast{bottom:calc(var(--kbh,0px) + 16px)}
  body.kbopen .modal{padding-bottom:20px}
  .modal{width:100%;border-radius:26px 26px 0 0;padding-bottom:max(24px,env(safe-area-inset-bottom))}
 }
+/* Diário */
+@media(max-width:800px){body[data-view=diary] #vDiary{display:flex}}
+.dy-acts{display:flex;gap:10px}
+.dy-acts [hidden],.dy-pin[hidden],#dMain[hidden]{display:none!important}
+#dMain{flex:1;min-height:0;display:flex;flex-direction:column}
+.dy-pin{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 0 28px}
+.dy-dots{display:flex;gap:14px;height:14px;align-items:center}
+.dy-dots i{width:12px;height:12px;border-radius:50%;border:1.6px solid var(--ink);transition:background .15s,transform .15s}
+.dy-dots i.on{background:var(--ink);transform:scale(1.12)}
+.dy-dots.err{animation:dyshake .35s}
+@keyframes dyshake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+.dy-msg{font-size:12px;color:var(--mut2);min-height:36px;max-width:260px;text-align:center;line-height:1.5}
+.dy-msg.err{color:#c0392b}
+[data-theme=dark] .dy-msg.err{color:#ff7b6b}
+.dy-pad{display:grid;grid-template-columns:repeat(3,68px);gap:12px}
+.dy-pad button{height:54px;border-radius:16px;background:var(--key);font-family:var(--p);font-size:18px;font-weight:500;color:var(--ink);transition:transform .12s,background .15s}
+.dy-pad button:active{transform:scale(.93);background:var(--act)}
+.dy-pad button:disabled{opacity:.4}
+.dy-pad .nb{background:none;pointer-events:none}
+.dy-link{font-size:11px;color:var(--mut2);text-decoration:underline;text-underline-offset:3px;padding:8px;align-self:center}
+.dy-q{width:100%;background:var(--card);border:0;border-radius:12px;padding:11px 14px;font-size:13px;color:var(--ink);margin:14px 0 12px;flex:none}
+.dy-q:focus{outline:2px solid var(--ink);outline-offset:1px}
+.dy-d{display:block;font-size:10px;color:var(--mut2);margin-bottom:6px;letter-spacing:.02em}
+.dy-foot{display:flex;justify-content:center;flex:none;padding-bottom:6px}
+.dy-mood button{font-size:18px;padding:6px 12px}
+@media(prefers-reduced-motion:reduce){.dy-dots.err{animation:none}}
 @media(max-width:800px){
  #vChat{transition:bottom .35s cubic-bezier(.22,1,.36,1)}
  body.kbopen[data-view=chat] #vChat{bottom:var(--kbh,0px)}
@@ -484,6 +510,32 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
   <nav class="nav" data-on="book"></nav>
  </section>
 
+
+ <section class="phone" id="vDiary" aria-label="Diário">
+  <div class="dash">
+   <div class="top">
+    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+    <div class="dy-acts">
+     <button id="dLockB" class="plusb" aria-label="Bloquear diário" hidden><i class="fa-solid fa-lock"></i></button>
+     <button id="dAdd" class="plusb" aria-label="Nova entrada" hidden><i class="fa-solid fa-plus"></i></button>
+    </div>
+   </div>
+   <h1>Seu <b>diário</b></h1>
+   <p class="sum" id="dSum"></p>
+   <div class="dy-pin" id="dPin" hidden>
+    <div class="dy-dots" id="dDots" role="img" aria-label="Dígitos do PIN"></div>
+    <p class="dy-msg" id="dMsg" aria-live="polite"></p>
+    <div class="dy-pad" id="dPad"></div>
+    <button type="button" class="dy-link" id="dForgot">Esqueci o PIN</button>
+   </div>
+   <div id="dMain" hidden>
+    <input id="dQ" class="dy-q" type="search" placeholder="Buscar nas entradas" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Buscar nas entradas">
+    <div class="nl" id="dList"></div>
+    <div class="dy-foot"><button type="button" class="dy-link" id="dChg">Trocar PIN</button></div>
+   </div>
+  </div>
+  <nav class="nav" data-on="diary"></nav>
+ </section>
  <section class="phone" id="vBell" aria-label="Avisos">
   <div class="dash">
    <div class="top">
@@ -709,6 +761,20 @@ html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:non
   </div>
  </div>
 </div>
+<div class="overlay" id="dv">
+ <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dvH">
+  <div class="mh"><h2 id="dvH">Nova entrada</h2><button id="dvX" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="f">
+   <div class="fld w">Como foi o dia?<div class="types dy-mood" id="dMood"></div></div>
+   <label class="w">Entrada<textarea id="dX" rows="8" maxlength="5000"></textarea></label>
+  </div>
+  <div class="acts">
+   <button class="del" id="dD" aria-label="Excluir entrada"><i class="fa-solid fa-trash"></i></button>
+   <button id="dC">Cancelar</button>
+   <button class="ok" id="dS">Salvar</button>
+  </div>
+ </div>
+</div>
 <div class="kb" id="kb" role="group" aria-label="Teclado do app">
  <div class="kbt">
   <span id="kbL"></span>
@@ -931,7 +997,7 @@ function renderDash(){
 const renderAll=()=>{renderCal();renderList();renderDash();renderNotes()};
 
 /* Navegação inferior */
-const NAV=[['dash','fa-solid fa-table-cells-large','Painel'],['cal','fa-regular fa-calendar','Calendário'],['bell','fa-regular fa-bell','Avisos'],['chat','fa-regular fa-comment','Assistente'],['book','fa-solid fa-book','Notas'],['board','fa-solid fa-pen-ruler','Quadro'],['prof','fa-regular fa-user','Perfil']];
+const NAV=[['dash','fa-solid fa-table-cells-large','Painel'],['cal','fa-regular fa-calendar','Calendário'],['bell','fa-regular fa-bell','Avisos'],['chat','fa-regular fa-comment','Assistente'],['book','fa-solid fa-book','Notas'],['diary','fa-solid fa-feather-pointed','Diário'],['board','fa-solid fa-pen-ruler','Quadro'],['prof','fa-regular fa-user','Perfil']];
 const NAV_MAIN=['dash','cal','bell','chat'];
 const closeTrays=back=>document.querySelectorAll('.ntray.open').forEach(t=>{t.classList.remove('open');const m=t.parentElement.querySelector('.more');if(m){m.classList.remove('open');m.setAttribute('aria-expanded','false');if(back)m.focus({preventScroll:true})}});
 const navBtn=(k,ic,t,cur)=>`<button type="button" data-k="${k}" class="${k===cur?'on':''}"${k===cur?' aria-current="page"':''} aria-label="${t}"><span class="ic"><i class="${ic}"></i></span><span class="nl">${t}</span></button>`;
@@ -950,7 +1016,7 @@ document.querySelectorAll('.nav').forEach(n=>{
   if(k==='dash'||k==='cal')document.body.dataset.view=k;
   else if(k==='book')document.body.dataset.view='notes';
   else if(k==='bell')document.body.dataset.view='bell';
-  else if(k==='chat'||k==='board')document.body.dataset.view=k;
+  else if(k==='chat'||k==='board'||k==='diary')document.body.dataset.view=k;
   else if(k==='prof'){document.body.dataset.view='prof';if(window.tagsRender)window.tagsRender()}
   requestAnimationFrame(()=>placePill('jump'));
  });
@@ -2152,6 +2218,201 @@ renderAll();
  }
  load();setInterval(()=>load(),18e5);
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+})();
+</script>
+<script>
+/* ===== Diário com PIN: texto criptografado (AES-GCM, chave derivada do PIN com PBKDF2) ===== */
+(function(){
+ const KEY='agenda-diary-v1',LK='agenda-diary-lock',LEN=6,MOODS=['😄','🙂','😐','😔','😢'];
+ const enc=new TextEncoder(),dec=new TextDecoder(),CAN=!!(window.crypto&&crypto.subtle);
+ const b64=u=>{let t='';u=new Uint8Array(u);for(let i=0;i<u.length;i++)t+=String.fromCharCode(u[i]);return btoa(t)};
+ const unb64=t=>Uint8Array.from(atob(t),c=>c.charCodeAt(0));
+ const rd=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+ let key=null,entries=[],buf='',mode='unlock',first='',changing=false,busy=false,editId=null,mood='',idleT=null,cdT=null;
+ const el={pin:$('#dPin'),main:$('#dMain'),dots:$('#dDots'),msg:$('#dMsg'),pad:$('#dPad'),sum:$('#dSum'),add:$('#dAdd'),lk:$('#dLockB'),
+  list:$('#dList'),q:$('#dQ'),forgot:$('#dForgot'),chg:$('#dChg'),ov:$('#dv'),x:$('#dX'),mood:$('#dMood'),del:$('#dD'),h:$('#dvH')};
+
+ /* criptografia */
+ async function derive(pin,salt){
+  const k=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},k,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ }
+ async function seal(k,obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  return{iv:b64(iv),ct:b64(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,enc.encode(JSON.stringify(obj))))};
+ }
+ async function unseal(k,o){return JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},k,unb64(o.ct))))}
+ async function create(pin){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  key=await derive(pin,salt);
+  localStorage.setItem(KEY,JSON.stringify({v:1,salt:b64(salt),check:await seal(key,'ok'),data:await seal(key,entries)}));
+ }
+ async function tryOpen(pin){
+  const st=rd(KEY);if(!st)return false;
+  try{const k=await derive(pin,unb64(st.salt));await unseal(k,st.check);key=k;entries=await unseal(k,st.data);return true}catch(e){return false}
+ }
+ async function persist(){
+  try{const st=rd(KEY);st.data=await seal(key,entries);localStorage.setItem(KEY,JSON.stringify(st));return true}
+  catch(e){toast('Não foi possível salvar o diário');return false}
+ }
+
+ /* tentativas erradas: depois de 5, espera crescente */
+ const fails=()=>rd(LK)||{n:0,u:0};
+ const waitLeft=()=>Math.max(0,Math.ceil((fails().u-Date.now())/1000));
+ function failed(){
+  const f=fails();f.n++;
+  if(f.n>=5)f.u=Date.now()+Math.min(900000,30000*Math.pow(2,f.n-5));
+  try{localStorage.setItem(LK,JSON.stringify(f))}catch(e){}
+  return f;
+ }
+
+ /* tela do PIN */
+ const TXT={unlock:'Digite seu PIN para abrir o diário.',create:'Crie um PIN de 6 dígitos para proteger seu diário.',confirm:'Repita o PIN para confirmar.'};
+ function say(t,err){el.msg.textContent=t||'';el.msg.className='dy-msg'+(err?' err':'')}
+ function drawDots(){el.dots.innerHTML='';for(let i=0;i<LEN;i++){const d=document.createElement('i');if(i<buf.length)d.className='on';el.dots.append(d)}}
+ function buildPad(){
+  el.pad.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+   const b=document.createElement('button');b.type='button';
+   if(!k){b.className='nb';b.tabIndex=-1;b.setAttribute('aria-hidden','true')}
+   else{b.dataset.k=k;b.textContent=k;if(k==='⌫')b.setAttribute('aria-label','Apagar')}
+   el.pad.append(b);
+  });
+ }
+ function showPin(){
+  el.pin.hidden=false;el.main.hidden=true;el.add.hidden=el.lk.hidden=true;
+  buf='';drawDots();
+  el.sum.textContent=changing?'Escolha o novo PIN.':(mode==='unlock'?'Protegido por PIN':'Crie seu PIN');
+  say(changing&&mode==='create'?'Digite o novo PIN de 6 dígitos.':TXT[mode]);
+  el.forgot.textContent=changing?'Cancelar':'Esqueci o PIN';
+  el.forgot.hidden=(mode!=='unlock'&&!changing);
+  tick();
+ }
+ function showMain(){
+  el.pin.hidden=true;el.main.hidden=false;el.add.hidden=el.lk.hidden=false;
+  armIdle();renderList();
+ }
+ function screen(){
+  if(!CAN){el.pin.hidden=el.main.hidden=true;el.add.hidden=el.lk.hidden=true;el.sum.textContent='O diário precisa de conexão segura (HTTPS) para criptografar suas entradas.';return}
+  if(key){showMain();return}
+  changing=false;mode=rd(KEY)?'unlock':'create';showPin();
+ }
+ function tick(){
+  clearInterval(cdT);const s=mode==='unlock'?waitLeft():0;
+  el.pad.querySelectorAll('button[data-k]').forEach(b=>b.disabled=s>0);
+  if(s>0&&mode==='unlock'){
+   say('Muitas tentativas. Tente de novo em '+s+'s.',true);
+   cdT=setInterval(()=>{const r=waitLeft();if(r<=0){clearInterval(cdT);el.pad.querySelectorAll('button[data-k]').forEach(b=>b.disabled=false);say(TXT.unlock)}else say('Muitas tentativas. Tente de novo em '+r+'s.',true)},1000);
+  }
+ }
+ function shake(t){
+  say(t,true);el.dots.classList.remove('err');void el.dots.offsetWidth;el.dots.classList.add('err');
+  if(navigator.vibrate)try{navigator.vibrate(60)}catch(e){}
+ }
+ async function submit(){
+  if(busy)return;busy=true;const pin=buf;
+  try{
+   if(mode==='create'){first=pin;mode='confirm';buf='';drawDots();say(TXT.confirm);return}
+   if(mode==='confirm'){
+    if(pin!==first){mode='create';first='';buf='';drawDots();shake('Os PINs não conferem. Comece de novo.');return}
+    say('Protegendo…');
+    const was=changing;
+    await create(pin);
+    changing=false;mode='unlock';first='';showMain();toast(was?'PIN alterado':'Diário protegido');return;
+   }
+   if(waitLeft()>0){buf='';drawDots();tick();return}
+   say('Verificando…');
+   if(await tryOpen(pin)){try{localStorage.removeItem(LK)}catch(e){}showMain();return}
+   const f=failed();buf='';drawDots();
+   if(f.n>=5){shake('PIN incorreto.');tick()}
+   else shake('PIN incorreto. '+(5-f.n)+(5-f.n===1?' tentativa restante.':' tentativas restantes.'));
+  }catch(e){buf='';drawDots();shake('Algo deu errado. Tente novamente.')}
+  finally{busy=false}
+ }
+ function press(k){
+  if(busy||waitLeft()>0&&mode==='unlock')return;
+  if(k==='⌫'||k==='Backspace'){buf=buf.slice(0,-1);drawDots();return}
+  if(!/^\d$/.test(k)||buf.length>=LEN)return;
+  buf+=k;drawDots();if(buf.length===LEN)setTimeout(submit,120);
+ }
+ el.pad.addEventListener('click',e=>{const b=e.target.closest('button[data-k]');if(b)press(b.dataset.k)});
+ document.addEventListener('keydown',e=>{
+  if(!el.pin.offsetParent||el.pin.hidden||document.querySelector('.overlay.open'))return;
+  const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'))return;
+  if(/^\d$/.test(e.key)||e.key==='Backspace')press(e.key);
+ });
+ el.forgot.onclick=()=>{
+  if(changing){changing=false;mode='unlock';key?showMain():screen();return}
+  askDel('Apagar o diário?',()=>{
+   try{localStorage.removeItem(KEY);localStorage.removeItem(LK)}catch(e){}
+   key=null;entries=[];changing=false;mode='create';showPin();toast('Diário apagado');
+  },'Sem o PIN não dá para recuperar as entradas. Isso apaga todas elas e permite criar um novo PIN.','Apagar tudo');
+ };
+ el.chg.onclick=()=>{changing=true;mode='create';first='';showPin()};
+
+ /* bloqueio automático */
+ function lock(){
+  clearTimeout(idleT);key=null;entries=[];buf='';first='';editId=null;changing=false;
+  el.ov.classList.remove('open');if(kbEl&&el.x===kbEl)hideKb();
+  el.q.value='';el.list.innerHTML='';
+  mode=rd(KEY)?'unlock':'create';screen();
+ }
+ function armIdle(){clearTimeout(idleT);if(key)idleT=setTimeout(lock,120000)}
+ el.lk.onclick=()=>{lock();toast('Diário bloqueado')};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&key)lock()});
+ ['pointerdown','keydown'].forEach(ev=>{$('#vDiary').addEventListener(ev,armIdle,true);el.ov.addEventListener(ev,armIdle,true)});
+ new MutationObserver(()=>{if(document.body.dataset.view!=='diary'){if(key)lock()}else screen()}).observe(document.body,{attributes:true,attributeFilter:['data-view']});
+
+ /* lista */
+ const fmtAt=t=>{const d=new Date(t);return fmtDate(iso(d))+' · '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})};
+ function renderList(){
+  const q=el.q.value.trim().toLowerCase(),all=[...entries].sort((a,b)=>b.at-a.at);
+  const list=q?all.filter(e=>e.text.toLowerCase().includes(q)||fmtAt(e.at).toLowerCase().includes(q)):all;
+  el.sum.textContent=`${entries.length} ${entries.length===1?'entrada':'entradas'} · protegido por PIN`;
+  el.list.innerHTML='';
+  if(!list.length){el.list.innerHTML='<p class="empty"></p>';el.list.firstChild.innerHTML=q?'Nada encontrado.':'Nenhuma entrada ainda.<br>Toque em + para escrever.';return}
+  list.forEach(e=>{
+   const c=document.createElement('button');c.type='button';c.className='ncard';c.dataset.id=e.id;
+   c.innerHTML='<small class="dy-d"></small><p></p>';
+   c.querySelector('small').textContent=(e.mood?e.mood+'  ':'')+fmtAt(e.at);
+   c.querySelector('p').textContent=e.text;
+   el.list.append(c);
+  });
+ }
+ el.q.addEventListener('input',renderList);
+ el.list.addEventListener('click',e=>{const c=e.target.closest('[data-id]');if(c)openEntry(c.dataset.id)});
+
+ /* editor */
+ el.x.setAttribute('data-kb','');el.x.inputMode='none';el.x.dataset.kbl='Diário';
+ function drawMood(){
+  el.mood.innerHTML='';
+  MOODS.forEach(m=>{const b=document.createElement('button');b.type='button';b.textContent=m;b.className=m===mood?'on':'';b.setAttribute('aria-label','Humor '+m);b.setAttribute('aria-pressed',m===mood);
+   b.onclick=()=>{mood=(mood===m?'':m);drawMood()};el.mood.append(b)});
+ }
+ function openEntry(id){
+  const e=id?entries.find(x=>x.id===id):null;editId=e?e.id:null;mood=e?e.mood||'':'';
+  el.h.textContent=e?'Editar entrada':'Nova entrada';el.x.value=e?e.text:'';el.del.style.display=e?'block':'none';
+  drawMood();el.ov.classList.add('open');el.x.focus();
+ }
+ const closeEntry=()=>{el.ov.classList.remove('open');hideKb()};
+ el.add.onclick=()=>openEntry(null);
+ $('#dvX').onclick=closeEntry;$('#dC').onclick=closeEntry;
+ el.ov.onclick=e=>{if(e.target===el.ov)closeEntry()};
+ $('#dS').onclick=async()=>{
+  const text=el.x.value.trim();if(!text)return toast('Escreva algo na entrada');
+  if(!key)return;
+  if(editId){Object.assign(entries.find(x=>x.id===editId),{text,mood})}
+  else entries.push({id:uid(),text,mood,at:Date.now()});
+  const wasEdit=!!editId;
+  if(await persist()){closeEntry();renderList();toast(wasEdit?'Entrada atualizada':'Entrada salva')}
+ };
+ el.del.onclick=()=>askDel('Excluir entrada?',async()=>{
+  const snap=JSON.stringify(entries);
+  entries=entries.filter(x=>x.id!==editId);
+  if(await persist()){closeEntry();renderList();toast('Entrada excluída',async()=>{entries=JSON.parse(snap);await persist();renderList()})}
+ },'Você poderá desfazer logo depois.');
+
+ buildPad();screen();
 })();
 </script>
 <script>
