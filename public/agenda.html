@@ -226,8 +226,9 @@ button{background:none;border:0;cursor:pointer}
 .overlay{padding-bottom:calc(16px + var(--kbh,0px));transition:padding-bottom .35s cubic-bezier(.22,1,.36,1)}
 .modal{max-height:calc(92dvh - var(--kbh,0px))}
 body.kbopen .toast{bottom:calc(var(--kbh,0px) + 16px)}
-.kb{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:520px;margin:0 auto;background:var(--top);border-radius:0;border-top:1px solid var(--line);padding:8px 6px max(10px,env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .38s cubic-bezier(.22,1,.36,1);-webkit-user-select:none;user-select:none;touch-action:none}
+.kb{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:520px;margin:0 auto;background:var(--top);border-radius:0;border-top:1px solid var(--line);padding:8px 6px max(10px,env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .38s cubic-bezier(.22,1,.36,1);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
 .kb.open{transform:none}
+.kb *{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 .kbt{display:flex;align-items:center;gap:6px;padding:2px 8px 10px 12px}
 .kbt span{flex:1;font-family:var(--p);font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--mut2)}
 .kbt button{width:36px;height:30px;border-radius:10px;color:var(--ink);font-size:13px;transition:transform .12s,background .15s}
@@ -1216,7 +1217,7 @@ document.querySelectorAll('#fT,#fS,#fP,#fL,#nT,#nX,#pfN').forEach(el=>{el.setAtt
 const ROWS={abc:[[...'qwertyuiop'],[...'asdfghjklç'],[...'zxcvbnm']],sym:[[...'1234567890'],[...'@#$%&-+()/'],['_','*','"',"'",':',';','!','?']]};
 const VAR={a:['á','à','â','ã'],e:['é','ê','è'],i:['í','î'],o:['ó','ô','õ'],u:['ú','ü']};
 const esc=t=>t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-let kbEl=null,shiftS='off',layer='abc',cur=null,repT=null,repI=null,switching=false;
+let kbEl=null,shiftS='off',layer='abc',cur=null,repT=null,repI=null,switching=false,kbUp=0;
 const kkey=(k,lab,cls='',v='')=>`<button type="button" tabindex="-1" class="k ${cls}${v?' v':''}" data-k="${esc(k)}"${v?` data-v="${esc(v)}"`:''}>${lab}</button>`;
 function kbFields(el){const m=el.closest('.modal');return m?[...m.querySelectorAll('[data-kb]')].filter(x=>x.offsetParent):[el]}
 function drawKb(){
@@ -1232,6 +1233,7 @@ function drawKb(){
  $('#kbR').innerHTML=`<div class="kr">${R[0].map(ch).join('')}</div><div class="kr">${R[1].map(ch).join('')}</div><div class="kr">${r3}</div><div class="kr">${kkey('sym',layer==='abc'?'?123':'ABC','sp w15')}${kkey(',',',')}${kkey(' ','espaço','w5 sx')}${kkey('.','.')}${ent}</div>`;
 }
 function showKb(el){
+ if(kbEl===el&&kb.classList.contains('open'))return; /* já aberto neste campo: não redesenha (mantém a tecla e o pop-up de acentos) */
  kbEl=el;layer='abc';shiftS='off';
  const lb=el.closest('label');$('#kbL').textContent=lb?lb.firstChild.textContent.trim():(el.dataset.kbl||'');
  autoShift();drawKb();
@@ -1288,8 +1290,10 @@ function showVar(k){
 }
 const overVar=e=>{const t=document.elementFromPoint(e.clientX,e.clientY);return t&&t.closest&&t.closest('.kv b')};
 kb.addEventListener('mousedown',e=>e.preventDefault());
+kb.addEventListener('contextmenu',e=>e.preventDefault());
 kb.addEventListener('pointerdown',e=>{
  const k=e.target.closest('.k');if(!k||!kbEl)return;
+ if(document.activeElement!==kbEl)kbEl.focus({preventScroll:true});
  cur={k,pop:null,tm:null};k.classList.add('dn');
  if(k.dataset.k==='back'){del();stopRep();repT=setTimeout(()=>{repI=setInterval(del,55)},420)}
  else if(k.dataset.v)cur.tm=setTimeout(()=>showVar(k),380);
@@ -1301,6 +1305,7 @@ kb.addEventListener('pointermove',e=>{
 });
 function endPress(e,cancel){
  if(!cur)return;
+ kbUp=Date.now();
  const {k,pop,tm}=cur;cur=null;clearTimeout(tm);stopRep();k.classList.remove('dn');
  if(pop){const b=cancel?null:(overVar(e)||pop.querySelector('b.hl'));pop.remove();if(b)typeChar(b.dataset.c);return}
  if(cancel||k.dataset.k==='back')return;
@@ -1321,7 +1326,12 @@ document.addEventListener('focusin',e=>{
 document.addEventListener('focusout',e=>{
  const el=e.target;if(!el.matches||!el.matches('[data-kb]'))return;
  if(el.dataset.native&&!switching){delete el.dataset.native;el.inputMode='none'}
- setTimeout(()=>{const a=document.activeElement;if(!(a&&a.matches&&a.matches('[data-kb]')))hideKb()},120);
+ setTimeout(()=>{
+  const a=document.activeElement;if(a&&a.matches&&a.matches('[data-kb]'))return;
+  /* segurar uma tecla (acentos) pode tirar o foco do campo no celular: devolve o foco em vez de fechar */
+  if(!switching&&kbEl&&(cur||Date.now()-kbUp<300)){kbEl.focus({preventScroll:true});return}
+  hideKb();
+ },120);
 });
 
 let tt;
